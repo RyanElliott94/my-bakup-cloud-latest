@@ -67,27 +67,27 @@ export default class GalleryTest extends React.Component{
         });
     }
 
-    convertCurrentFiles = () => {
-        var fileList = firebase.storage().ref("/want!").listAll();
+    // convertCurrentFiles = () => {
+    //     var fileList = firebase.storage().ref("/want!").listAll();
 
-        fileList.then(data => {
-            data.items.forEach(item => {
-                item.getDownloadURL().then(url => {
-                    Jimp.read(url)
-                    .then(data => {
-                    return data
-                        .resize(512, Jimp.AUTO)
-                        .getBase64(Jimp.AUTO, (err, src) => {
-                            this.uploadThumbnails(src, item.name);
-                        });
-                    })
-                    .catch(err => {
-                    console.error(err);
-                    });
-                });
-            });
-        });
-    }
+    //     fileList.then(data => {
+    //         data.items.forEach(item => {
+    //             item.getDownloadURL().then(url => {
+    //                 Jimp.read(url)
+    //                 .then(data => {
+    //                 return data
+    //                     .resize(512, Jimp.AUTO)
+    //                     .getBase64(Jimp.AUTO, (err, src) => {
+    //                         this.uploadThumbnails(src, item.name);
+    //                     });
+    //                 })
+    //                 .catch(err => {
+    //                 console.error(err);
+    //                 });
+    //             });
+    //         });
+    //     });
+    // }
 
     addNewFile = () => {
         $(".new-photo-input").focus().trigger('click');
