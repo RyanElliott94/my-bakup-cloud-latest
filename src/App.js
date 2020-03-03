@@ -50,7 +50,7 @@ export default class App extends React.Component{
               this.state.user !=null ? <Folders currentUser={this.state.user} /> : <Home /> 
             )}/>
             <Route exact={false} path='/:handle' render={props => (
-             <GalleryTest {...props} />
+             <Gallery {...props} />
             )}/>
         </BrowserRouter>
     );

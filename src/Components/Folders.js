@@ -6,7 +6,6 @@ import { FiLogOut } from "react-icons/fi";
 import * as firebase from 'firebase/app';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
 import { saveAs } from "file-saver";
-import Popup from "./Popup";
 require("firebase/database");
 require("bootstrap/js/src");
 require("firebase/storage");
@@ -21,7 +20,8 @@ export default class Folders extends React.Component{
             databaseRef: firebase.database().ref('folders/'),
             folderList: [],
             folderName: "",
-            storageFolderName: ""
+            storageFolderName: "",
+            noFolders: false
         }
 
         this.finalFolderList = [];
@@ -33,9 +33,9 @@ export default class Folders extends React.Component{
     }
 
     componentDidMount(){
-        this.loadFolders = setInterval(() => {
+        this.loadFolders = window.setInterval(() => {
             this.loadList();
-        }, 1000);
+        }, 1500);
 
         this.state.databaseRef.on("child_removed", (data) => {
             $(`#${data.key}`).remove();
@@ -60,6 +60,7 @@ export default class Folders extends React.Component{
                 this.loadPrivateFolders();
             }
         });
+
     }
 
     createFolder = () => {
@@ -104,15 +105,17 @@ export default class Folders extends React.Component{
     }
 
     loadPrivateFolders = () => {
-        this.state.databaseRef.on('child_added', data => {
-            if(data.val().private){
-                this.finalFolderList.push({
-                    folderID: data.key,
-                    storagePath: data.val().storagePath,
-                    folderName: data.val().folderName,
-                    ownerID: data.val().ownerID
-                });
-            }
+        this.state.databaseRef.once('value', snap => {
+            snap.forEach(data => {
+                if(data.val().private){
+                    this.finalFolderList.push({
+                        folderID: data.key,
+                        storagePath: data.val().storagePath,
+                        folderName: data.val().folderName,
+                        ownerID: data.val().ownerID
+                    });
+                }
+            });
             this.loadList();
           });
     }
@@ -121,6 +124,9 @@ export default class Folders extends React.Component{
         this.setState({
             folderList: this.finalFolderList
         });
+        if(!this.state.folderList.length){
+            this.setState({noFolders: true})
+        }
     }
 
     logout = () => {
@@ -179,13 +185,20 @@ export default class Folders extends React.Component{
             });
             break;
         case "item-3":
-            $(".command-txt").css({display: "block"});
-            var commandText = $(".command-txt").val();
-            if(commandText === "Get that money" && e.keyCode === 13){
-                this.loadPrivateFolders();
-            }
+            $(".command-txt").css({display:"block"});
+                if($(".command-txt").val() === "Get that money"){
+                    this.loadPrivateFolders();
+                    $(".react-contextmenu").css({display:"none"});
+                }
             break;
         }
+    }
+
+    noFolders(){
+        $(".load-spin").css({display: "none"});
+        $(".loading-text").text("");
+        clearInterval(this.loadFolders);
+        return this.state.folderList.length === 0 ? <p style={{textAlign:"center"}}>No Folders Were Found!</p> : ""
     }
 
     render(){
@@ -206,12 +219,12 @@ export default class Folders extends React.Component{
             </div>
             </div>
             <p className="loading-text">Loading Folders...</p>
+            {this.state.noFolders ? this.noFolders() : ""}
                 <div className="folders">
-            {this.state.folderList.length ? this.state.folderList.map((items, i) => {
+            {this.state.folderList.length > 0 ? this.state.folderList.map((items, i) => {
                 clearInterval(this.loadFolders);
                 $(".load-spin").css({display: "none"})
                 $(".loading-text").text("");
-
                 return <Link className="f-items" key={i} to={{ 
                     pathname: '/gallery', 
                     state: {
@@ -220,12 +233,11 @@ export default class Folders extends React.Component{
                         loadImages: true
                     } 
                 }}>
-
                     <ContextMenuTrigger id="menu">
                     <p className="folder-item" id={items.folderID}><FaFolder className="folder-icon" color="#5f9ea0" />{items.folderName}</p>
                     </ContextMenuTrigger>
                     </Link>
-            }) : clearInterval(this.loadFolders)}
+            }) : ""}
                 </div>
                 <div className="modal" tabIndex="-1" role="dialog">
             <div className="modal-dialog" role="document">
@@ -265,7 +277,7 @@ export default class Folders extends React.Component{
             </MenuItem>
             {this.mq.matches ? <MenuItem divider /> : null}
             {this.mq.matches ? 
-            <MenuItem preventClose={true} data={{menuItem: 'item-3'}} onClick={this.handleMenu}>
+            <MenuItem preventClose data={{menuItem: 'item-3'}} onClick={this.handleMenu}>
             Enter Command
             <input type="text" className="form-control command-txt" style={{display: "none"}}></input>
             </MenuItem>

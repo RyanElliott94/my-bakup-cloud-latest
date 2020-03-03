@@ -1,13 +1,10 @@
 import React from "react";
 import * as firebase from 'firebase';
 import { PhotoSwipe } from "react-photoswipe";
-import LazyLoad from "react-lazyload";
-import { FaFileVideo } from 'react-icons/fa';
 import { MdAddCircle } from 'react-icons/md';
 import { AiFillHome } from "react-icons/ai";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
 import { saveAs } from "file-saver";
-import ReactPaginate from 'react-paginate';
 const Jimp = require('jimp');
 require("firebase/database");
 require("firebase/storage");
@@ -50,12 +47,12 @@ export default class GalleryTest extends React.Component{
 
         this.loadImages = setInterval(() => {
                 this.loadList();
-        }, 1000);
+        }, 1500);
 
-        // $(".next").on("click", e => {
-        // this.currentPage += 1;
-        // this.loadList();
-        // });
+        $(".next").on("click", e => {
+        this.currentPage += 1;
+        this.loadList();
+        });
 
         // $(".previous").on("click", e => {
         // this.currentPage = - 1;
@@ -65,6 +62,7 @@ export default class GalleryTest extends React.Component{
         $(document).on("contextmenu", e => {
             e.preventDefault();
         });
+
     }
 
     // convertCurrentFiles = () => {
@@ -208,7 +206,7 @@ export default class GalleryTest extends React.Component{
     }
     
       loadList = () => {
-          $("img").remove();
+          $("react-contextmenu-wrapper").remove();
          var begin = ((this.currentPage - 1) * this.numberPerPage);
     
          var end = begin + this.numberPerPage;
@@ -231,7 +229,7 @@ export default class GalleryTest extends React.Component{
                     });
                 });
             });
-         this.getFullSizeImages()
+         this.getFullSizeImages();
          this.drawList();
 
          return;
@@ -316,18 +314,9 @@ export default class GalleryTest extends React.Component{
             //             w: 3000
             //         })
             // });
-
-            this.check();
         }else{
             this.setState({noImages: true})
         }
-    }
-
-    check() {
-        $(".next").attr("disabled", this.currentPage === this.numberOfPages ? true : false);
-        $(".prev").attr("disabled", this.currentPage === 1 ? true : false);
-        $(".first").attr("disabled", this.currentPage === 1 ? true : false);
-        $(".last").attr("disabled", this.currentPage === this.numberOfPages ? true : false);
     }
 
 
@@ -374,7 +363,7 @@ export default class GalleryTest extends React.Component{
                 {this.mq.matches ? <a className="home-ico" href="/"><AiFillHome color="white" /></a> : <a className="home-link" href="/">Home</a>}
                 {this.mq.matches ? <MdAddCircle className="add-photo-ico" color="white" onClick={this.addNewFile} /> : <button className="btn btn-sm" onClick={this.addNewFile} id="add-photo">Add more photo's</button>}
                 </div>
-                <input type="file" name="file" accept="image/*, video/*" id="add-photo" className="new-photo-input" style={{display:"none"}} multiple></input>
+                <input type="file" name="file" accept="image/*" id="add-photo" className="new-photo-input" style={{display:"none"}} multiple></input>
                 </section>
             <div className="gal-content">
                 <div className="progress">
@@ -391,47 +380,15 @@ export default class GalleryTest extends React.Component{
                     $(".load-spin").css({display: "none"})
                     $(".loading-text").text("");
                     clearInterval(this.loadImages);
-                    return <ContextMenuTrigger id="menu" holdToDisplay={500}>
-                    <LazyLoad height={5}>
-                        {item.src.fileType.includes("video") ?
-                        <a href={item.src}>
-                        <FaFileVideo className="folder-icon img-thumbnail" color="#5f9ea0"/> 
-                        </a>
-                        :
+                    return <ContextMenuTrigger id="menu">
                           <img className="img image-item" key={i} id={item.src.fileName} onClick={this.showImage} src={item.src.thumbnail} download={item.src.thumbnail}></img>
-                        }
-                    </LazyLoad>
                     </ContextMenuTrigger>
                         }) : ""}
-                        {this.imgData.map((item, i) => {
-                        return item.src.fileType.includes("video") ?
-                        <LazyLoad>
-                        <a href={item.src}>
-                        <FaFileVideo className="video-file-icon" color="#5f9ea0"/> 
-                        </a>
-                        </LazyLoad>
-                         : null
-                    })}
                     </div>
                     {this.state.noImages ? this.noImages() : null}
                     </div>
                 <div className="controls">
-                {/* <ReactPaginate
-                    previousLabel={'previous'}
-                    nextLabel={'next'}
-                    breakLabel={'...'}
-                    breakClassName={'break-me'}
-                    pageCount={this.getNumberOfPages}
-                    marginPagesDisplayed={2}
-                    pageRangeDisplayed={5}
-                    onPageChange={this.loadList}
-                    containerClassName={'pagination'}
-                    subContainerClassName={'pages pagination'}
-                    activeClassName={'active'}
-                /> */}
-
-                <button className="btn btn-sm prev">Prev</button>
-                <button className="btn btn-sm next"value="next">Next</button>
+                <button className="btn btn-sm next"value="next">Show More</button>
                 </div>
                 </section>
             </div>
