@@ -54,11 +54,6 @@ export default class Gallery extends React.Component{
         this.loadList();
         });
 
-        // $(".previous").on("click", e => {
-        // this.currentPage = - 1;
-        // this.loadList();
-        // });
-
         $(document).on("contextmenu", e => {
             e.preventDefault();
         });
@@ -66,7 +61,7 @@ export default class Gallery extends React.Component{
     }
 
     // convertCurrentFiles = () => {
-    //     var fileList = firebase.storage().ref("/want!").listAll();
+    //     var fileList = firebase.storage().ref("/karen-danczuk").listAll();
 
     //     fileList.then(data => {
     //         data.items.forEach(item => {
@@ -305,15 +300,6 @@ export default class Gallery extends React.Component{
             this.setState({
                 hasLoaded: true
             });
-    
-            // this.imgData.forEach(img => {
-            //     this.imgsForSwipe.push(
-            //         {
-            //             src: img.src,
-            //             h: 3000,
-            //             w: 3000
-            //         })
-            // });
         }else{
             this.setState({noImages: true})
         }
@@ -326,32 +312,6 @@ export default class Gallery extends React.Component{
         clearInterval(this.loadImages)
         return this.imgData.length === 0 ? <p>No Images Were Found!</p> : ""
     }
-
-    // getImageItems(){
-    //     var imgUrl = "";
-    //     var index = 0;
-    //     for(var i = 0; i < this.modifiedListData.length; i++){
-    //         this.modifiedListData[i].getDownloadURL().then(url => {
-    //             index = i;
-    //             imgUrl = url;
-    //         });
-    //     }
-    //     return <LazyLoad 
-    //     height="200" 
-    //     offset={100} 
-    //     resize={true} 
-    //     once={true}>
-    //   <a href={url}>
-    //   <img
-    //     className="image-item"
-    //     id={index} 
-    //     key={i} 
-    //     src={im}
-    //     onClick={this.viewImage}
-    //     ></img>
-    //   </a>
-    //     </LazyLoad>
-    // }
 
 
     render(){

@@ -13,6 +13,7 @@
     "jimp": "^0.9.3",
     "jquery": "^3.4.1",
     "jquery-lazyload-any": "^0.3.1",
+    "jszip": "^3.2.2",
     "react": "^16.12.0",
     "react-bootstrap": "^1.0.0-beta.16",
     "react-contextmenu": "^2.13.0",

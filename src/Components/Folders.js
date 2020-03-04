@@ -9,6 +9,8 @@ import { saveAs } from "file-saver";
 require("firebase/database");
 require("bootstrap/js/src");
 require("firebase/storage");
+const JSZip = require("jszip");
+const Jimp = require("jimp");
 const $ = require("jquery");
 
 export default class Folders extends React.Component{
@@ -25,6 +27,7 @@ export default class Folders extends React.Component{
         }
 
         this.finalFolderList = [];
+        this.downloadList = [];
         this.mq = window.matchMedia("(max-width: 480px)");
     }
 
@@ -125,7 +128,7 @@ export default class Folders extends React.Component{
             folderList: this.finalFolderList
         });
         if(!this.state.folderList.length){
-            this.setState({noFolders: true})
+            this.setState({noFolders: true});
         }
     }
 
@@ -142,7 +145,7 @@ export default class Folders extends React.Component{
             var key = $(target).find(".folder-item").attr("id");
             $("#btn-folder").addClass("edit-folder");
             $(".modal").modal("show");
-
+            $(".modal-title").text("Edit Folder");
             $(document).on("click", ".edit-folder", e => {
                 var folderName = $("#main-folder-name").val();
                 var isPrivate = $("#private-checkbox");
@@ -159,19 +162,15 @@ export default class Folders extends React.Component{
                         listData.then(listData => {
                             listData.items.forEach(img => {
                              img.getDownloadURL().then(src => {
-                                 var xhr = new XMLHttpRequest();
-                                 xhr.responseType = 'blob';
-                                 xhr.onload = function(event) {
-                                     var blob = xhr.response;
-                                     saveAs(blob, img.name);
-                                 };
-                                 xhr.open('GET', src);
-                                 xhr.send();
+                                this.downloadList.push({fileName: img.name, fileSRC: src});
                                });
                             });
                         });
                     }
                 });
+                this.getDownloadFiles = setInterval(() => {
+                    this.createZipFile();
+                }, 1000);
             });
             break;
         case "item-2":
@@ -193,6 +192,21 @@ export default class Folders extends React.Component{
             break;
         }
     }
+
+    createZipFile = () => {
+            var zip = new JSZip();
+            this.downloadList.forEach(url => {
+                const fileResult = fetch(url.fileSRC).then(r => {
+                    if (r.status === 200) return r.blob()
+                    return Promise.reject(new Error(r.statusText))
+                })
+                zip.file(url.fileName, fileResult);
+            });
+            clearInterval(this.getDownloadFiles);
+            zip.generateAsync({type:"blob"})
+                .then(blob => saveAs(blob, "My-Bakup-Cloud.zip"))
+                .catch(e => console.log(e));
+        }
 
     noFolders(){
         $(".load-spin").css({display: "none"});
@@ -258,7 +272,7 @@ export default class Folders extends React.Component{
                 </div>
                 <div className="modal-buttons">
                     <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" className="btn btn-primary" id="btn-folder">Create Folder</button>
+                    <button type="button" className="btn btn-primary" id="btn-folder">Confirm</button>
                 </div>
                 </div>
             </div>
