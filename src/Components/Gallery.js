@@ -25,9 +25,10 @@ export default class Gallery extends React.Component{
             showImage: false
         }
 
+    this.mq = window.matchMedia("(max-width: 480px)");
     this.modifiedListData = [];
     this.newImagesList = [];
-    this.numberPerPage = 25;
+    this.numberPerPage = this.mq.matches ? 30 : 50;
     this.currentPage = 1;
     this.slicedFullSizeImages =[];
     this.numberOfPages = 0;
@@ -36,7 +37,6 @@ export default class Gallery extends React.Component{
     this.imgsForSwipe = [];
     this.fullSizeImageList = [];
     this.fullSizeIMGs = [];
-    this.mq = window.matchMedia("(max-width: 480px)");
     }
 
     componentWillMount(){
@@ -61,23 +61,35 @@ export default class Gallery extends React.Component{
     }
 
     // convertCurrentFiles = () => {
-    //     var fileList = firebase.storage().ref("/karen-danczuk").listAll();
-
-    //     fileList.then(data => {
+    //     clearInterval(this.loadImages)
+    //     var tempList = [];
+    //     var fileList = firebase.storage().ref("/test/").listAll();
+    //     var thumbList = firebase.storage().ref("/test/thumbs/").listAll();
+    //     thumbList.then(data => {
     //         data.items.forEach(item => {
-    //             item.getDownloadURL().then(url => {
-    //                 Jimp.read(url)
-    //                 .then(data => {
-    //                 return data
-    //                     .resize(512, Jimp.AUTO)
-    //                     .getBase64(Jimp.AUTO, (err, src) => {
-    //                         this.uploadThumbnails(src, item.name);
+    //             tempList.push({name: item.name});
+    //         });
+    //         console.log(tempList)
+    //     });
+    //     fileList.then(data => {
+    //         data.items.map(item => {
+    //                 if(!tempList.includes(item.name)){
+    //                     item.getDownloadURL().then(url => {
+    //                         Jimp.read(url)
+    //                                 .then(data => {
+    //                                 return data
+    //                                     .resize(512, Jimp.AUTO)
+    //                                     .getBase64(Jimp.AUTO, (err, src) => {
+    //                                         this.uploadThumbnails(src, item.name);
+    //                                     });
+    //                                 })
+    //                                 .catch(err => {
+    //                                 console.error(err);
+    //                                 });
     //                     });
-    //                 })
-    //                 .catch(err => {
-    //                 console.error(err);
-    //                 });
-    //             });
+    //                 }else{
+    //                     console.log("file already exists!");
+    //                 }
     //         });
     //     });
     // }
@@ -95,24 +107,18 @@ export default class Gallery extends React.Component{
                     name: fileName,
                     size: fileSize,
                     updated: updated
-                }, fileType.includes("image") ? "" : fileType.includes("video") ? "video" : "thumbnail", fileName);
+                });
             }
         });
     }
 
-    uploadPhoto(file, meta, type) {
-        var fileType = "";
+    uploadPhoto(file, meta) {
         let progress = 0;
         const metadata = {
             meta
         };
-        if(type === "video"){
-            fileType = this.state.videoRef.child(file.name).put(file, meta);
-        }else{
-            fileType = this.state.imageRef.child(file.name).put(file, meta);
-        }
-
-        let upload = fileType;
+        
+        let upload = this.state.imageRef.child(file.name).put(file, meta);
         upload.on(firebase.storage.TaskEvent.STATE_CHANGED,
             (snapshot) => {
                 progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -131,20 +137,25 @@ export default class Gallery extends React.Component{
                 }
             }, () => {
                 upload.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                    console.log(upload);
-                    if(type === ""){
-                    $(".progress-bar").text(`Generating Thumbnails... %${Math.round(progress)}`);
-                    Jimp.read(downloadURL)
-                    .then(data => {
-                    return data
-                        .resize(512, Jimp.AUTO)
-                        .getBase64(Jimp.AUTO, (err, src) => {
-                            this.uploadThumbnails(src, file.name);
+                    this.tempList = [];
+                    this.tempList.push(downloadURL);
+                }).finally(() => {
+                    if(firebase.storage.TaskState.SUCCESS){
+                        this.tempList.forEach(img => {
+                            $(".progress-bar").text(`Generating Thumbnails... %${Math.round(progress)}`);
+                            Jimp.read(img)
+                            .then(data => {
+                            return data
+                                .resize(512, Jimp.AUTO)
+                                .getBase64(Jimp.AUTO, (err, src) => {
+                                    this.uploadThumbnails(src, file.name);
+                                });
+                            })
+                            .catch(err => {
+                            console.error(err);
+                            });
+                            console.log("Finished Uploading!", img);
                         });
-                    })
-                    .catch(err => {
-                    console.error(err);
-                    });
                     }
                 });
             });
@@ -152,16 +163,15 @@ export default class Gallery extends React.Component{
     
     uploadThumbnails = (file, fileName) => {
         var upload = this.state.thumbRef.child(fileName).putString(file, 'data_url', {contentType: "image/jpg"});
-        console.log(upload)
         upload.on(firebase.storage.TaskEvent.STATE_CHANGED,
             (snapshot) => {
                 let progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                 $(".progress-bar").css({display:"block"});
                 $(".progress-bar").width(Math.round(progress) + "%");
                 $(".progress-bar").text(`Uploading Thumbnails... %${Math.round(progress)}`)
-                console.log("%", Math.round(progress));
             },
             (error) => {
+                console.log(error)
                 switch (error.code) {
                     case 'storage/unauthorized':
                         break;
@@ -171,7 +181,22 @@ export default class Gallery extends React.Component{
                     break;    
                 }
             }, () => {
-                $(".progress-bar").css({display:"none"});
+                upload.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                    $(".progress-bar").css({display:"none"});
+                    upload.snapshot.ref.getMetadata().then(data => {
+                        this.imgData.push({
+                            index: 5000,
+                        src: {
+                            fileName: data.name,
+                            thumbnail: downloadURL,
+                            fileType: data.contentType
+                        }});
+                        this.loadList();
+                        console.log(data)
+                    });
+                    this.tempList = [];
+                    this.tempList.push(downloadURL);
+                });
             }
             );
     }
@@ -194,21 +219,21 @@ export default class Gallery extends React.Component{
         var fullSizedImages = await this.state.imageRef.listAll();
         var thumbs = await this.state.thumbRef.listAll();
             this.setState({
-                thumbs: thumbs.items,
+                thumbs: thumbs.items.reverse(),
                 fullSizeImages: fullSizedImages.items
             });
         this.numberOfPages = this.getNumberOfPages()
     }
     
       loadList = () => {
-          $("react-contextmenu-wrapper").remove();
+        //   $(".react-contextmenu-wrapper").remove();
+        //   $("img").remove();
          var begin = ((this.currentPage - 1) * this.numberPerPage);
     
          var end = begin + this.numberPerPage;
 
          this.modifiedListData = this.state.thumbs.slice(begin, end);
          this.slicedFullSizeImages = this.state.fullSizeImages.slice(begin, end);
-
 
          this.modifiedListData.map((item, i) => {
                 item.getDownloadURL().then(url => {
@@ -276,11 +301,9 @@ export default class Gallery extends React.Component{
 
       showImage = (e, data, target) => {
           var fileName = $(e.target).closest(".image-item").attr("id");
-          var contextFileName = $(target).find(".image-item").attr("id");
-          var id = data.menuItem === "item-0" ? contextFileName : fileName;
 
             this.state.fullSizeImages.forEach(img => {
-                if(img.name === id){
+                if(img.name === fileName){
                     img.getDownloadURL().then(src => {
                         window.open(src)
                     });
@@ -303,6 +326,10 @@ export default class Gallery extends React.Component{
         }else{
             this.setState({noImages: true})
         }
+
+        // this.imgData.sort(function (x, y) {
+        //     return x.index - y.index;
+        // });
     }
 
 
